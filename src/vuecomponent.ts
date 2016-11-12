@@ -41,7 +41,6 @@ function createDecorator(name?:string, options?:vuejs.ComponentOption){
             c.prototype = constructor.prototype;
             return new c();
         }
-        if (!name) name = camelToSnake(target.toString().match(/\w+/g)[1]);
         if (!options) options = {};
         if (!options.props) options.props = {};
         if (!options.watch) options.watch = {};
@@ -114,15 +113,19 @@ function createDecorator(name?:string, options?:vuejs.ComponentOption){
 
         var data = options.data;
         options.data = function() {return clone(data, false)}
-        Vue.component(name, options);
+        if(name){
+            Vue.component(name, options);
 
-        // the new constructor behaviour
-        // var f:()=>void = function () {
-        //     return Vue.component(name);
-        // }
-        // return f;
-        DeveloperUtils.decoratorStop();
-        return Vue.component(name);
-        
+            // the new constructor behaviour
+            // var f:()=>void = function () {
+            //     return Vue.component(name);
+            // }
+            // return f;
+            DeveloperUtils.decoratorStop();
+            return Vue.component(name);
+        }else{
+            DeveloperUtils.decoratorStop();
+            return Vue.extend(options);
+        }
     }
 }
