@@ -113,8 +113,9 @@ function createDecorator(name?:string, options?:vuejs.ComponentOption){
 
         var data = options.data;
         options.data = function() {return clone(data, false)}
+        var retComp;
         if(name){
-            Vue.component(name, options);
+            retComp = Vue.component(name, options);
 
             // the new constructor behaviour
             // var f:()=>void = function () {
@@ -122,10 +123,31 @@ function createDecorator(name?:string, options?:vuejs.ComponentOption){
             // }
             // return f;
             DeveloperUtils.decoratorStop();
-            return Vue.component(name);
         }else{
             DeveloperUtils.decoratorStop();
-            return Vue.extend(options);
+            retComp =  Vue.extend(options);
         }
+        
+        if (process.env.NODE_ENV !== 'production'){
+            ((options: any) => {
+                if(options.hotId && (options.template || '').length && options.module) {
+                    ((module) => {
+                        if(module && module.hot) {
+                            module.hot.accept();
+                            let hotAPI: any = require('vue-hot-reload-api');
+                            hotAPI.install(Vue, false);
+                            if (!hotAPI.compatible) return;
+                            if (!module.hot.data) {
+                                hotAPI.createRecord(options.hotId, retComp);
+                            } else {
+                                hotAPI.update(options.hotId, retComp, options.template);
+                            }
+                        }
+                    })(options.module);
+                }
+            })(options);
+        }
+
+        return retComp;
     }
 }
